@@ -1,0 +1,13 @@
+#version 450 core
+layout(local_size_x =   5, local_size_y =   5, local_size_z =   5) in;
+layout (binding = 1, rgba32f) writeonly uniform image2D renderto;
+
+
+void main()
+{
+    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+
+    vec2 color_rg = vec2(texelCoord) / vec2( imageSize(renderto) );
+    imageStore(renderto, texelCoord, vec4(color_rg, 0, 0));
+    return;
+}
