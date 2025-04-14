@@ -1,7 +1,7 @@
 #ifndef __AWC2_CONTEXT_INTERFACE_HEADER__
 #define __AWC2_CONTEXT_INTERFACE_HEADER__
 #include "C/awc2_api.h"
-#include "util/macro.h"
+#include <util/macro.h>
 #include "window_types.hpp"
 
 
@@ -88,7 +88,8 @@ namespace AWC2 {
     AWC2_API __hot void         setCurrentContext(ContextID id = 0);
     AWC2_API __hot ContextID    getCurrentContext();
     AWC2_API __hot ViewportSize getCurrentContextViewport();
-    AWC2_API WindowStateFlag    getCurrentContextWindowState();
+    AWC2_API __hot WindowStateFlag getCurrentContextWindowState();
+    AWC2_API __hot i64             getCurrentContextFrameTime(); /* Nanoseconds */
     AWC2_API __hot void begin();
     AWC2_API __hot void end();
 } // namespace AWC2

@@ -170,6 +170,7 @@ void AWC2ContextData::setCurrent() const
 
 void AWC2ContextData::begin()
 {
+    m_frameTime.begin();
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -192,6 +193,7 @@ void AWC2ContextData::end()
 
     m_window.swapBuffers();
     m_io.reset();
+    m_frameTime.end();
     return;
 }
 

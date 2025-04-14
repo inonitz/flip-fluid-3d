@@ -5,6 +5,7 @@
 #include "internal_window.hpp"
 #include "internal_input.hpp"
 #include <util/pool.hpp>
+#include <util/time.hpp>
 #include <util/bufferptr.hpp>
 
 
@@ -20,10 +21,11 @@ struct alignsz(32) AWC2ContextData
     Window            m_window;
     InputState        m_io;
     void*             m_imgui{DEFAULTVOIDPTR};
+    Time::Timestamp   m_frameTime{};
     u8                m_id{DEFAULT8};
     u8                m_FlagInit{DEFAULT8};
     u8                m_FlagClosed{DEFAULT8};
-    u8                reserved[6]{0};
+    u8                reserved[21]{0};
 
     void create(
         u8 __internal_context_id,

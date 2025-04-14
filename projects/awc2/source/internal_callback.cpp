@@ -227,6 +227,9 @@ void glfw_scroll_offset_callback(
 ) {
 	const auto active_ctxt_id = *__rcast(u8*, glfwGetWindowUserPointer(window));
 	auto& mouse_state = __awc2_lib_get_context(active_ctxt_id).m_io;
+	auto prevStateScroll = mouse_state.currentFrameScroll;
+	bool prevState	     = mouse_state.scrollMovedFlag[1];
+
 	mouse_state.updateScrollOffset(Input::cursorPosition{{{ 
 		__scast(f32, xoffset), 
 		__scast(f32, yoffset) 
@@ -245,6 +248,14 @@ void glfw_scroll_offset_callback(
 	__call_imgui_callback_func(active_ctxt_id, ImGui_ImplGlfw_ScrollCallback,
 		window, xoffset, yoffset
 	);	
+
+
+	markfmt("[[%02hhu]window_scroll_callback][ps=%02hhu][Before=(%-2.1f, %-2.1f)][After=(%-2.1f, %-2.1f)]",
+		active_ctxt_id,
+		prevState,
+		prevStateScroll.x, prevStateScroll.y,
+		mouse_state.currentFrameScroll.x, mouse_state.currentFrameScroll.y 
+	);
 	return;	
 }
 

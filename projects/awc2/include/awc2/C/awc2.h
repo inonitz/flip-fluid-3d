@@ -20,7 +20,8 @@ __AWC2_C_INTERFACE_BEGIN__
 /* namespace AWC2 { */
 AWC2_API void awc2init();
 AWC2_API void awc2destroy();
-AWC2_API void awc2newframe();
+AWC2_API __hot void awc2newframe();
+AWC2_API AWC2_DEPRECATED_MSG("Unimplemented") __hot i64 awc2getElapsedTime();
 /* } */
 
 
@@ -42,18 +43,19 @@ AWC2_API void awc2setCursorMode(AWC2CursorMode mode);
 
 /* context.hpp */
 /* namespace AWC2 { */
-AWC2_API AWC2ContextID           awc2createContext();
-AWC2_API void                    awc2destroyContext(AWC2ContextID id);
-AWC2_API void                    awc2initializeContext(AWC2ContextDescriptor const* ctxt);
-AWC2_API void                    awc2closeContext(AWC2ContextID id);
-AWC2_API void                    awc2getActiveContextList(AWC2ContextVector* outbuf);
+AWC2_API AWC2ContextID             awc2createContext();
+AWC2_API void                      awc2destroyContext(AWC2ContextID id);
+AWC2_API void                      awc2initializeContext(AWC2ContextDescriptor const* ctxt);
+AWC2_API void                      awc2closeContext(AWC2ContextID id);
+AWC2_API void                      awc2getActiveContextList(AWC2ContextVector* outbuf);
 AWC2_API __hot bool_t              awc2getContextStatus(AWC2ContextID id); /* If context is closed or not */
-AWC2_API __hot void              awc2setCurrentContext(AWC2ContextID id);
-AWC2_API __hot AWC2ContextID     awc2getCurrentContext();
-AWC2_API __hot AWC2ViewportSize  awc2getCurrentContextViewport();
-AWC2_API    AWC2WindowStateFlag  awc2getCurrentContextWindowState();
-AWC2_API __hot void              awc2begin();
-AWC2_API __hot void              awc2end();
+AWC2_API __hot void                awc2setCurrentContext(AWC2ContextID id);
+AWC2_API __hot AWC2ContextID       awc2getCurrentContext();
+AWC2_API __hot AWC2ViewportSize    awc2getCurrentContextViewport();
+AWC2_API __hot AWC2WindowStateFlag awc2getCurrentContextWindowState();
+AWC2_API __hot i64                 awc2getCurrentContextFrameTime(); /* Nanoseconds */
+AWC2_API __hot void                awc2begin();
+AWC2_API __hot void                awc2end();
 /* } */
 
 

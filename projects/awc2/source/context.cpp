@@ -159,6 +159,12 @@ AWC2_API WindowStateFlag getCurrentContextWindowState()
 }
 
 
+AWC2_API i64 getCurrentContextFrameTime()
+{
+    return internal::__awc2_lib_get_active_context().m_frameTime.value_units<i64>(1e+9);
+}
+
+
 __hot void begin() { internal::__awc2_lib_get_active_context().begin(); return; }
 __hot void end()   { internal::__awc2_lib_get_active_context().end();   return; }
 

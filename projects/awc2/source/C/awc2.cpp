@@ -1,4 +1,5 @@
 #include "awc2/C/awc2.h"
+#include "awc2/context.hpp"
 #include "awc2/entry.hpp"
 #include "awc2/input.hpp"
 #include "../internal_event.hpp"
@@ -51,6 +52,15 @@ AWC2_EXTERNC void awc2destroy() {
 }
 AWC2_EXTERNC void awc2newframe() {
     AWC2::newFrame();
+}
+AWC2_API i64 awc2getElapsedTime() {
+    return DEFAULT64;
+    /*
+        [TODO]: 
+        AWC2Data is a whole Cache-line, and adding a Timestamp struct to it will make every
+        AWC2Data Fetch turn into 2 Cache-line fetches, and thats inefficient and unnecessary.
+        Need to think of something to not ruin that.
+    */
 }
 /* } */
 
@@ -198,6 +208,10 @@ AWC2_EXTERNC u8 awc2getCurrentContextWindowState()
     };
 }
 
+AWC2_EXTERNC i64 awc2getCurrentContextFrameTime()
+{
+    return AWC2::getCurrentContextFrameTime(); 
+}
 
 AWC2_EXTERNC __hot void awc2begin() {
     AWC2::begin();

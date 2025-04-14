@@ -1,0 +1,18 @@
+#version 460
+layout(local_size_x =   5, local_size_y =   5, local_size_z =   5) in;
+uniform sampler3D velu;
+uniform sampler3D velv;
+uniform sampler3D velw;
+writeonly uniform image3D newVelu;
+writeonly uniform image3D newVelv;
+writeonly uniform image3D newVelw;
+
+
+uniform float ku_gravity;
+uniform float ku_dt;
+
+
+void main()
+{
+    return;
+}

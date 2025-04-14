@@ -1,0 +1,144 @@
+#version 460
+#extension GL_EXT_shader_image_load_formatted : enable
+layout(local_size_x =   5, local_size_y =   5, local_size_z =   5) in;
+layout(binding = 0) uniform sampler3D positions;
+layout(binding = 1) uniform sampler3D velocities;
+layout(binding = 2) uniform sampler3D celltypes;
+layout(binding = 3) readonly  uniform image3D prevstaggeredu; /* .x = vel.u, .y = interpolation weight */
+layout(binding = 4) readonly  uniform image3D prevstaggeredv; /* .x = vel.v, .y = interpolation weight */
+layout(binding = 5) readonly  uniform image3D prevstaggeredw; /* .x = vel.w, .y = interpolation weight */
+layout(binding = 6) writeonly uniform image3D nextstaggeredu; /* .x = vel.u, .y = interpolation weight */
+layout(binding = 7) writeonly uniform image3D nextstaggeredv; /* .x = vel.v, .y = interpolation weight */
+layout(binding = 8) writeonly uniform image3D nextstaggeredw; /* .x = vel.w, .y = interpolation weight */
+
+uniform vec3  u_bottomLeftmostPosition;
+uniform float ku_dl;
+
+
+float halfdl = ku_dl * 0.5f;
+
+
+// vec2 fetchStaggered(in image3D grid, in ivec3 coord, in bool RightTrueLeftFalse)
+// {
+//     return texelFetch(grid, coord + ivec3(0, int(RightTrueLeftFalse), 0), 0).xy;
+// }
+
+
+// vec2 fetchStaggeredQuantity(in image3D grid, in ivec3 coord, in bool RightTrueLeftFalse)
+// {
+//     return texelFetch(grid, coord + ivec3(0, int(RightTrueLeftFalse), 0), 0).x;
+// }
+
+
+void splatWeightedVelcities(
+    in readonly  image3D oldval,
+    in writeonly image3D dest,
+    in vec3    position, 
+    in float   vel,
+    in vec3    shiftOffset
+);
+
+
+void main()
+{
+    ivec3 workID = ivec3(gl_GlobalInvocationID);
+
+    vec4 tmp  = texelFetch(positions, workID, 0);
+    vec4 tmp2 = imageLoad(prevstaggeredu, workID);
+    splatWeightedVelcities(
+        prevstaggeredu, 
+        nextstaggeredu,
+        tmp.xyz,
+        tmp.x,
+        vec3(0.5f, 0.0f, 0.0f)
+    );
+    splatWeightedVelcities(
+        prevstaggeredv, 
+        nextstaggeredv,
+        texelFetch(positions, workID, 0).xyz, 
+        imageLoad(prevstaggeredv, workID).y,
+        vec3(0.0f, 0.5f, 0.0f)
+    );
+    splatWeightedVelcities(
+        prevstaggeredw, 
+        nextstaggeredw,
+        texelFetch(positions, workID, 0).xyz, 
+        imageLoad(prevstaggeredw, workID).z,
+        vec3(0.0f, 0.0f, 0.5f)
+    );
+    return;
+}
+
+
+
+
+vec3 barycentricWeights(vec3 position)
+{
+    vec3 gridDisplacement = ( position - vec3(u_bottomLeftmostPosition) ) / ku_dl;
+    ivec3 ijk = ivec3(floor(gridDisplacement));
+    return gridDisplacement - vec3(ijk);
+}
+
+ivec3 getIndices(vec3 position)
+{
+    return ivec3(
+        floor( ( position - vec3(u_bottomLeftmostPosition) ) / ku_dl )
+    );
+}
+
+
+void splatWeightedVelcities(
+    in readonly  image3D oldval,
+    in writeonly image3D dest,
+    in vec3    position, 
+    in float   vel,
+    in vec3    shiftOffset
+) {
+    vec3  shifted, w, omw;
+    ivec3 shiftedi;
+    float volumeFactors[8];
+    ivec3 finalIndices[8];
+
+    /* Shift across a direction (i/j/k coordinate) */
+    shifted  = position - shiftOffset;
+    shiftedi = ivec3(floor(shifted));
+    w   = barycentricWeights(shifted);
+    omw = vec3(1.0f) - w;
+
+    /* 
+        Every Index Q that is inc/dec gets w_q weight attached, otherwise 1-w_q
+        Regardless of whether it is by 1/2 or 1 
+    */
+    /* the indices in comments are for illustration in the X direction */
+    /* This can also apply in the y or z direction */
+    volumeFactors = float[8](
+        /* (i, j, k) + (-0.5, 0, 0) */ omw.x * omw.y * omw.z, 
+        /* (i, j, k) + (+0.5, 0, 0) */ w.x   * omw.y * omw.z,
+        /* (i, j, k) + (-0.5, 1, 0) */ omw.x * w.y   * omw.z,
+        /* (i, j, k) + (+0.5, 1, 0) */ w.x   * w.y   * omw.z,
+        /* (i, j, k) + (-0.5, 0, 1) */ omw.x * omw.y * w.z,
+        /* (i, j, k) + (+0.5, 0, 1) */ w.x   * omw.y * w.z,
+        /* (i, j, k) + (-0.5, 1, 1) */ omw.x * w.y   * w.z,
+        /* (i, j, k) + (+0.5, 1, 1) */ w.x   * w.y   * w.z
+    );
+    finalIndices = ivec3[8](
+        shiftedi + ivec3(0, 0, 0),
+        shiftedi + ivec3(1, 0, 0),
+        shiftedi + ivec3(0, 1, 0),
+        shiftedi + ivec3(1, 1, 0),
+        shiftedi + ivec3(0, 0, 1),
+        shiftedi + ivec3(1, 0, 1),
+        shiftedi + ivec3(0, 1, 1),
+        shiftedi + ivec3(1, 1, 1)
+    );
+
+
+    vec2 to_write = vec2(0); 
+    for(uint i = 0; i < 8; ++i) {
+        vec4 tmp = imageLoad(oldval, finalIndices[i]);
+        to_write = tmp.xy;
+        to_write += vec2(vel * volumeFactors[i], volumeFactors[i]);
+        imageStore(dest, finalIndices[i], vec4(to_write, 0, 0) );
+    }
+    return;
+}

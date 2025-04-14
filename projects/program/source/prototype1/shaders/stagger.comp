@@ -1,0 +1,13 @@
+#version 460
+layout(local_size_x =   5, local_size_y =   5, local_size_z =   5) in;
+uniform sampler3D positions;
+uniform sampler3D velocities;
+writeonly uniform image3D staggeredu;
+writeonly uniform image3D staggeredv;
+writeonly uniform image3D staggeredw;
+writeonly uniform image3D staggeredweights;
+
+void main()
+{
+    return;
+}

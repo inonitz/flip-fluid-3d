@@ -11,6 +11,7 @@ project "program"
     }
     -- Specify Include Headers
     includedirs { "include", "source" }
+    IncludeDependencyHeaders("glm")
     IncludeProjectHeaders("util")
     IncludeProjectHeaders("glbinding")
     IncludeProjectHeaders("glbinding-aux")

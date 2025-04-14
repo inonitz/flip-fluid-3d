@@ -140,6 +140,12 @@ LinkProjectLibrary = function(ProjectName)
     filter {}
 end
 
+IncludeDependencyHeaders = function(ProjectName)
+    includedirs { ROOT_PATH("dependencies/" .. ProjectName .. "/include") }
+end
+
+
+
 
 LinkUtilLibrary = function()
     LinkProjectLibrary("util")
