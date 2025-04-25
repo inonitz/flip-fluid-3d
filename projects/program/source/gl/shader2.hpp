@@ -3,8 +3,24 @@
 #include <util/ifcrash.hpp>
 #include <string_view>
 #include <vector>
+#include <array>
 
 
+/* for CREATE_UNIFORM_FUNCTION_DEFINITON macro */
+namespace ShaderMetaTypes {
+    using array2f = std::array<f32, 2>;
+    using array3f = std::array<f32, 3>;
+    using array4f = std::array<f32, 4>;
+    using array2i = std::array<i32, 2>;
+    using array3i = std::array<i32, 3>;
+    using array4i = std::array<i32, 4>;
+    using array2u = std::array<u32, 2>;
+    using array3u = std::array<u32, 3>;
+    using array4u = std::array<u32, 4>;
+    using array2b = std::array<bool,2>;
+    using array3b = std::array<bool,3>;
+    using array4b = std::array<bool,4>;
+}
 
 
 struct ShaderData {
@@ -26,6 +42,61 @@ struct alignpk(16) BufferData {
 constexpr const char* shaderTypeToString(u32 type);
 
 
+#define CREATE_UNIFORM_FUNCTION_DEFINITON(TypeSpecifier, arg0) [[maybe_unused]] void uniform##TypeSpecifier(std::string_view const& name, arg0);
+
+#define CREATE_UNIFORM_FUNCTIONS_DEFINITIONS() \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(1f,  f32 v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(1i,  i32 v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(1ui, u32 v) \
+	\
+	CREATE_UNIFORM_FUNCTION_DEFINITON(2f,  ShaderMetaTypes::array2f const& v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(2i,  ShaderMetaTypes::array2i const& v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(2ui, ShaderMetaTypes::array2u const& v) \
+	\
+	CREATE_UNIFORM_FUNCTION_DEFINITON(3f,  ShaderMetaTypes::array3f const& v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(3i,  ShaderMetaTypes::array3i const& v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(3ui, ShaderMetaTypes::array3u const& v) \
+	\
+	CREATE_UNIFORM_FUNCTION_DEFINITON(4f,  ShaderMetaTypes::array4f const& v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(4i,  ShaderMetaTypes::array4i const& v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(4ui, ShaderMetaTypes::array4u const& v) \
+	\
+	CREATE_UNIFORM_FUNCTION_DEFINITON(1fv, f32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(2fv, f32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(3fv, f32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(4fv, f32 const* v) \
+	\
+	CREATE_UNIFORM_FUNCTION_DEFINITON(1iv, i32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(2iv, i32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(3iv, i32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(4iv, i32 const* v) \
+	\
+	CREATE_UNIFORM_FUNCTION_DEFINITON(1uiv, u32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(2uiv, u32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(3uiv, u32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(4uiv, u32 const* v) \
+	\
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2fv,   std::vector<f32> const& v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3fv,   std::vector<f32> const& v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4fv,   std::vector<f32> const& v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2x3fv, std::vector<f32> const& v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3x2fv, std::vector<f32> const& v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2x4fv, std::vector<f32> const& v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4x2fv, std::vector<f32> const& v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3x4fv, std::vector<f32> const& v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4x3fv, std::vector<f32> const& v) \
+	\
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2fv,   f32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3fv,   f32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4fv,   f32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2x3fv, f32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3x2fv, f32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2x4fv, f32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4x2fv, f32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3x4fv, f32 const* v) \
+	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4x3fv, f32 const* v) \
+
+
 
 
 typedef struct ShaderProgramV2 
@@ -41,53 +112,7 @@ private:
 												typeIsShaderMeta, 
 													std::vector<ShaderData>, 
 													std::vector<loadedShader>
-												>::type; 
-
-    /* for CREATE_UNIFORM_FUNCTION_DEFINITON macro */
-    using array2f = std::array<f32, 2>;
-    using array3f = std::array<f32, 3>;
-    using array4f = std::array<f32, 4>;
-    using array2i = std::array<i32, 2>;
-    using array3i = std::array<i32, 3>;
-    using array4i = std::array<i32, 4>;
-    using array2u = std::array<u32, 2>;
-    using array3u = std::array<u32, 3>;
-    using array4u = std::array<u32, 4>;
-    using array2b = std::array<bool,2>;
-    using array3b = std::array<bool,3>;
-    using array4b = std::array<bool,4>;
-
-
-	bool loadShader(ShaderData& init, BufferData const& loadedShader);
-
-
-	template<bool typeIsShaderMeta> void createFromCommon(shaderMetaOrBufferMetaType<typeIsShaderMeta> const& meta) {
-		m_shaders.resize(meta.size());
-		m_sources.resize(meta.size());
-		if constexpr (typeIsShaderMeta) /* simple copy */ { 
-			m_shaders = meta;
-		} 
-		else { /* we need to init 'shaders' ourselves */
-			for(size_t i = 0; i < m_sources.size(); ++i) {
-				/* We wont save the original pointer of the data as we're not taking ownership of it. */
-				m_shaders[i] = { nullptr, meta[i].second };
-			}
-		}
-
-
-		for(size_t i = 0; i < m_shaders.size(); ++i) 
-		{
-			/* Could combine into one function call with std::conditional, but this is more readable. */
-			if constexpr (typeIsShaderMeta) {
-				refreshShaderSource(i, meta[i].filepath);
-			} else {
-				refreshShaderSource(i, meta[i].first);
-			}
-		}
-		return;
-	}
-
-
+												>::type;
 public:
 	/* 
 		createFrom*() will:
@@ -128,7 +153,8 @@ public:
 	
 	
 	void resizeLocalWorkGroup(u32 shaderID, u32 workGroupSizeX, u32 workGroupSizeY, u32 workGroupSizeZ);
-	
+	void resizeLocalWorkGroupPtr(u32 shaderID, u32 const* vec3_size);
+
 
 	/*
 		will use the loaded shader contents to 
@@ -140,71 +166,88 @@ public:
 
 	void bind()   const;
 	void unbind() const;
+	u32  id() const;
 	void destroy();
 
 
 	void UniformBlock(std::string_view const& uboName, u32 binding);
 	void StorageBlock(std::string_view const& ssboName, u32 binding);
 
-#define CREATE_UNIFORM_FUNCTION_DEFINITON(TypeSpecifier, arg0) [[maybe_unused]] void uniform##TypeSpecifier(std::string_view const& name, arg0);
-	CREATE_UNIFORM_FUNCTION_DEFINITON(1f,  f32 v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(1i,  i32 v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(1ui, u32 v)
-
-	CREATE_UNIFORM_FUNCTION_DEFINITON(2f,  array2f const& v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(2i,  array2i const& v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(2ui, array2u const& v)
-	
-	CREATE_UNIFORM_FUNCTION_DEFINITON(3f,  array3f const& v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(3i,  array3i const& v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(3ui, array3u const& v)
-	
-	CREATE_UNIFORM_FUNCTION_DEFINITON(4f,  array4f const& v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(4i,  array4i const& v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(4ui, array4u const& v)
-	
-	CREATE_UNIFORM_FUNCTION_DEFINITON(1fv, f32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(2fv, f32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(3fv, f32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(4fv, f32 const* v)
-	
-	CREATE_UNIFORM_FUNCTION_DEFINITON(1iv, i32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(2iv, i32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(3iv, i32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(4iv, i32 const* v)
-
-	CREATE_UNIFORM_FUNCTION_DEFINITON(1uiv, u32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(2uiv, u32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(3uiv, u32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(4uiv, u32 const* v)
-
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2fv,   std::vector<f32> const& v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3fv,   std::vector<f32> const& v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4fv,   std::vector<f32> const& v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2x3fv, std::vector<f32> const& v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3x2fv, std::vector<f32> const& v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2x4fv, std::vector<f32> const& v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4x2fv, std::vector<f32> const& v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3x4fv, std::vector<f32> const& v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4x3fv, std::vector<f32> const& v)
-	
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2fv,   f32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3fv,   f32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4fv,   f32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2x3fv, f32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3x2fv, f32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix2x4fv, f32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4x2fv, f32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix3x4fv, f32 const* v)
-	CREATE_UNIFORM_FUNCTION_DEFINITON(Matrix4x3fv, f32 const* v)
-
-#undef CREATE_UNIFORM_FUNCTION_DEFINITON
+	CREATE_UNIFORM_FUNCTIONS_DEFINITIONS()
 
 
 private:
     u32 m_id = DEFAULT32;
 	std::vector<ShaderData> 	m_shaders;
 	std::vector<shaderContents> m_sources;
+
+private:
+	bool loadShader(ShaderData& init, BufferData const& loadedShader);
+
+
+	template<bool typeIsShaderMeta> void createFromCommon(
+		shaderMetaOrBufferMetaType<typeIsShaderMeta> const& meta
+	) {
+		m_shaders.resize(meta.size());
+		m_sources.resize(meta.size());
+		if constexpr (typeIsShaderMeta) /* simple copy */ { 
+			m_shaders = meta;
+		} 
+		else { /* we need to init 'shaders' ourselves */
+			for(size_t i = 0; i < m_sources.size(); ++i) {
+				/* We wont save the original pointer of the data as we're not taking ownership of it. */
+				m_shaders[i] = { nullptr, meta[i].second };
+			}
+		}
+
+
+		for(size_t i = 0; i < m_shaders.size(); ++i) 
+		{
+			/* Could combine into one function call with std::conditional, but this is more readable. */
+			if constexpr (typeIsShaderMeta) {
+				refreshShaderSource(i, meta[i].filepath);
+			} else {
+				refreshShaderSource(i, meta[i].first);
+			}
+		}
+		return;
+	}
+
+
 } Program;
 
 
+
+
+typedef struct __easier_interface_to_compute_shader_v1 {
+public:
+
+	void load(ShaderData const& file_metadata);
+	void destroy();
+	bool compile();
+
+	void bind()     const;
+	void unbind()   const;
+	void dispatch() const;
+	void info() 	const;
+
+	void UniformBlock(std::string_view const& uboName,  u32 binding);
+	void StorageBlock(std::string_view const& ssboName, u32 binding);
+
+	void resizeLocal   (u32 const* vec3_sizeptr); /* resizeDispatch must also be called */
+	void resizeDispatch(u32 const* vec3_sizeptr);
+	void resizeDispatchWithProblemSize(u32 const* vec3_sizeptr, u32 reductionFactor = 1);
+	void refreshFromFile();
+	void refreshFromSource();
+
+	CREATE_UNIFORM_FUNCTIONS_DEFINITIONS()
+private:
+	Program 		   m_shaderProgram;
+	std::array<u32, 3> m_localWorkgroupSize = { DEFAULT32, DEFAULT32, DEFAULT32 };
+	std::array<u32, 3> m_dispatchSize       = { DEFAULT32, DEFAULT32, DEFAULT32 };
+	u32 		       m_reductionFactor    = 1;
+} ComputeShader;
+
+
+#undef CREATE_UNIFORM_FUNCTIONS_DEFINITIONS
+#undef CREATE_UNIFORM_FUNCTION_DEFINITON

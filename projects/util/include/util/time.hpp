@@ -1,5 +1,6 @@
 #ifndef __UTIL_TIME_HEADER__
 #define __UTIL_TIME_HEADER__
+#include "util/macro.h"
 #include <util/util_api.h>
 #include <util/base_type.h>
 #include <chrono>
@@ -125,6 +126,10 @@ private:
 };
 
 
+/*
+	This is just a buffer for keeping track of the sum(samples[]) / length(samples[]),
+	constantly calculating averages
+*/
 template<u32 maxSamples> class SMATick { /* Sample Average Tick (?) */
 public:
 
@@ -153,10 +158,48 @@ private:
 	u64 tick[maxSamples];
 };
 
-/*
-	This is just a buffer for keeping track of the sum(samples[]) / length(samples[]),
-	constantly calculating averages
-*/
+
+typedef struct __timestamp_counter_with_improvements_v2
+{
+public:
+
+    __force_inline void begin() { 
+        m_stamp.begin();
+        return;
+    }
+    __force_inline void end() {
+        m_stamp.end();
+        auto tmp = m_stamp.previous_value().count();
+
+        m_min = (tmp < m_min) ? tmp : m_min;
+        m_max = (tmp > m_max) ? tmp : m_max;
+        m_sum += tmp;
+        ++m_ticks;
+        return;
+    }
+    __force_inline i64 currentFrame()  const { return m_stamp.curr_value().count();     }
+    __force_inline i64 previousFrame() const { return m_stamp.previous_value().count(); }
+    __force_inline i64 minimum() const { return m_min; }
+    __force_inline i64 maximum() const { return m_max; }
+    __force_inline i64 average() const { 
+        f32 tmp0 = m_sum;
+        f32 tmp1 = m_ticks;
+        return __scast(i64, tmp0 / tmp1); 
+    }
+    __force_inline i64 sum() const {
+        return m_sum;
+    }
+
+private:
+    Timestamp m_stamp;
+    i64 m_min   = 10'000'000'000;
+    i64 m_sum   = 0;
+    i64 m_max   = 0;
+    i64 m_ticks = 0;
+
+
+} TimestampV2;
+
 
 
 

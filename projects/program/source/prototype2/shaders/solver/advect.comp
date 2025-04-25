@@ -1,0 +1,79 @@
+#version 460
+#extension GL_EXT_shader_image_load_formatted : enable
+layout(local_size_x =   5, local_size_y =   5, local_size_z =   5) in;
+layout(location = 0) uniform sampler3D velu;
+layout(location = 1) uniform sampler3D velv;
+layout(location = 2) uniform sampler3D velw;
+layout(location = 3) readonly  uniform image3D prevposition; 
+layout(location = 4) writeonly uniform image3D nextposition; 
+
+uniform float ku_gravity;
+uniform float ku_dt;
+uniform float ku_dl;
+
+
+float k_invdl = 1.0f / ku_dl;
+
+
+vec3 trilerpStaggeredVelocities(vec3 position);
+
+
+void main()
+{
+    ivec3 texelCoord = ivec3(gl_GlobalInvocationID);
+    vec3  result = imageLoad(prevposition, texelCoord).xyz;
+    
+    result += ku_dt * trilerpStaggeredVelocities(result.xyz);
+    
+    imageStore(nextposition, texelCoord, vec4(result, 0));
+    return;
+}
+
+
+
+
+vec3 barycentricWeights(vec3 position)
+{
+    return ( position - floor(position) ) * k_invdl;
+}
+
+
+vec3 trilerpStaggeredVelocities(vec3 position)
+{
+    vec3 lerpedVel = vec3(0);
+    ivec3 posi = ivec3(floor(position));
+    vec3 w   = barycentricWeights(position);
+    vec3 omw = vec3(1.0f) - w;
+    float volumeFactors[8] = float[8](
+        omw.x * omw.y * omw.z, 
+        w.x   * omw.y * omw.z,
+        omw.x * w.y   * omw.z,
+        w.x   * w.y   * omw.z,
+        omw.x * omw.y * w.z,
+        w.x   * omw.y * w.z,
+        omw.x * w.y   * w.z,
+        w.x   * w.y   * w.z
+    );
+    ivec3 finalIndices[8] = ivec3[8](
+        posi + ivec3(0, 0, 0),
+        posi + ivec3(1, 0, 0),
+        posi + ivec3(0, 1, 0),
+        posi + ivec3(1, 1, 0),
+        posi + ivec3(0, 0, 1),
+        posi + ivec3(1, 0, 1),
+        posi + ivec3(0, 1, 1),
+        posi + ivec3(1, 1, 1)
+    );
+
+
+    for(uint i = 0; i < 8; ++i) {
+        lerpedVel.x += texelFetch(velu, finalIndices[i], 0).x * volumeFactors[i];
+    }
+    for(uint i = 0; i < 8; ++i) {
+        lerpedVel.y += texelFetch(velv, finalIndices[i], 0).x * volumeFactors[i];
+    }
+    for(uint i = 0; i < 8; ++i) {
+        lerpedVel.z += texelFetch(velw, finalIndices[i], 0).x * volumeFactors[i];
+    }
+    return lerpedVel;
+}

@@ -1,0 +1,34 @@
+#version 460
+#extension GL_EXT_shader_image_load_formatted : enable
+layout(local_size_x =   5, local_size_y =   5, local_size_z =   5) in;
+layout(location = 0) uniform sampler3D p_prev;
+layout(location = 1) uniform sampler3D r_next;
+
+layout(location = 2) uniform isampler3D beta_numer;
+layout(location = 3) uniform isampler3D beta_denom;
+
+layout(location = 4, r32f) uniform image3D p_next;
+
+
+#define loadFlatTexel(texid, texcoord) texelFetch(texid, texcoord, 0).x
+
+
+/* 
+    1. Can be easily optimized with reductionFactor
+    2. Can use some sort of dynamic-programming algorithm
+        to read data into shared memory, such that 
+        memory addresses that are used more than once won't have to be re-read from 
+        global memory every time. (<-- this is caching/some funky kind of parallel-prefetching)
+*/
+void main()
+{
+    ivec3 texelCoord = ivec3(gl_LocalInvocationID);
+    int numer = loadFlatTexel(beta_numer, ivec3(0));
+    int denom = loadFlatTexel(beta_denom, ivec3(0));
+    float beta_i = intBitsToFloat(numer) / intBitsToFloat(denom);
+
+
+    float nextp = loadFlatTexel(r_next, texelCoord) + beta_i * loadFlatTexel(p_prev, texelCoord);
+    imageStore(p_next, texelCoord, vec4(nextp, 0, 0, 0) );
+    return;
+}

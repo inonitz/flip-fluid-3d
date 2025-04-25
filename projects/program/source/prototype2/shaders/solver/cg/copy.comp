@@ -1,0 +1,17 @@
+#version 460
+#extension GL_EXT_shader_image_load_formatted : enable
+layout(local_size_x =   5, local_size_y =   5, local_size_z =   5) in;
+layout(location = 0) uniform sampler3D to_copy;
+layout(location = 1) uniform image3D   dest;
+
+
+
+/* 
+    Can be easily optimized with reductionFactor
+*/
+void main()
+{
+    ivec3 texelCoord = ivec3(gl_LocalInvocationID);
+    imageStore(dest, texelCoord, texelFetch(to_copy, texelCoord, 0));
+    return;
+}

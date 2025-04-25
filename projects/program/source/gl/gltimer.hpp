@@ -23,11 +23,11 @@ public:
 	u64 previousFrame() const { return m_query_result[0]; }
 private:
 	u32 m_query[2];
-	u64 m_query_result[2];
+	u64 m_query_result[2]{0};
 };
 
 
-} /* namespace Timer */
+} /* namespace Time */
 
 
 #endif

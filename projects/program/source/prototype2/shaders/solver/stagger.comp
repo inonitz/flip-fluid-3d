@@ -2,20 +2,27 @@
 #extension GL_EXT_shader_image_load_formatted : enable
 layout(local_size_x =   5, local_size_y =   5, local_size_z =   5) in;
 layout(binding = 0) uniform sampler3D positions;
-layout(binding = 1) uniform sampler3D velocities;
-layout(binding = 2) uniform sampler3D celltypes;
-layout(binding = 3) readonly  uniform image3D prevstaggeredu; /* .x = vel.u, .y = interpolation weight */
-layout(binding = 4) readonly  uniform image3D prevstaggeredv; /* .x = vel.v, .y = interpolation weight */
-layout(binding = 5) readonly  uniform image3D prevstaggeredw; /* .x = vel.w, .y = interpolation weight */
-layout(binding = 6) writeonly uniform image3D nextstaggeredu; /* .x = vel.u, .y = interpolation weight */
-layout(binding = 7) writeonly uniform image3D nextstaggeredv; /* .x = vel.v, .y = interpolation weight */
-layout(binding = 8) writeonly uniform image3D nextstaggeredw; /* .x = vel.w, .y = interpolation weight */
+layout(binding = 1) writeonly uniform image3D nextcelltypes;
+layout(binding = 2) readonly  uniform image3D prevstaggeredu; /* .x = vel.u, .y = interpolation weight */
+layout(binding = 3) readonly  uniform image3D prevstaggeredv; /* .x = vel.v, .y = interpolation weight */
+layout(binding = 4) readonly  uniform image3D prevstaggeredw; /* .x = vel.w, .y = interpolation weight */
+layout(binding = 5) writeonly uniform image3D nextstaggeredu; /* .x = vel.u, .y = interpolation weight */
+layout(binding = 6) writeonly uniform image3D nextstaggeredv; /* .x = vel.v, .y = interpolation weight */
+layout(binding = 7) writeonly uniform image3D nextstaggeredw; /* .x = vel.w, .y = interpolation weight */
+
 
 uniform vec3  u_bottomLeftmostPosition;
 uniform float ku_dl;
 
 
 float halfdl = ku_dl * 0.5f;
+
+
+#define MATERIAL_TYPE_FLUID (2.0f)
+#define MATERIAL_TYPE_SOLID (1.0f)
+#define MATERIAL_TYPE_EMPTY (0.0f)
+
+
 
 
 // vec2 fetchStaggered(in image3D grid, in ivec3 coord, in bool RightTrueLeftFalse)
@@ -41,31 +48,30 @@ void splatWeightedVelcities(
 
 void main()
 {
-    ivec3 workID = ivec3(gl_GlobalInvocationID);
-
-    vec4 tmp  = texelFetch(positions, workID, 0);
-    vec4 tmp2 = imageLoad(prevstaggeredu, workID);
+    ivec3 workID     = ivec3(gl_GlobalInvocationID);
+    vec3  positionID = texelFetch(positions, workID, 0).xyz;
     splatWeightedVelcities(
         prevstaggeredu, 
         nextstaggeredu,
-        tmp.xyz,
-        tmp.x,
-        vec3(0.5f, 0.0f, 0.0f)
+        positionID,
+        imageLoad(prevstaggeredu, workID).x,
+        vec3(0.0f, 0.5f, 0.5f)
     );
     splatWeightedVelcities(
         prevstaggeredv, 
         nextstaggeredv,
-        texelFetch(positions, workID, 0).xyz, 
-        imageLoad(prevstaggeredv, workID).y,
-        vec3(0.0f, 0.5f, 0.0f)
+        positionID, 
+        imageLoad(prevstaggeredv, workID).x,
+        vec3(0.5f, 0.0f, 0.5f)
     );
     splatWeightedVelcities(
         prevstaggeredw, 
         nextstaggeredw,
-        texelFetch(positions, workID, 0).xyz, 
-        imageLoad(prevstaggeredw, workID).z,
-        vec3(0.0f, 0.0f, 0.5f)
+        positionID, 
+        imageLoad(prevstaggeredw, workID).x,
+        vec3(0.5f, 0.5f, 0.0f)
     );
+    imageStore(nextcelltypes, ivec3(floor(positionID)), vec4(MATERIAL_TYPE_FLUID));
     return;
 }
 
@@ -75,8 +81,7 @@ void main()
 vec3 barycentricWeights(vec3 position)
 {
     vec3 gridDisplacement = ( position - vec3(u_bottomLeftmostPosition) ) / ku_dl;
-    ivec3 ijk = ivec3(floor(gridDisplacement));
-    return gridDisplacement - vec3(ijk);
+    return gridDisplacement - floor(gridDisplacement);
 }
 
 ivec3 getIndices(vec3 position)
@@ -104,6 +109,7 @@ void splatWeightedVelcities(
     shiftedi = ivec3(floor(shifted));
     w   = barycentricWeights(shifted);
     omw = vec3(1.0f) - w;
+
 
     /* 
         Every Index Q that is inc/dec gets w_q weight attached, otherwise 1-w_q

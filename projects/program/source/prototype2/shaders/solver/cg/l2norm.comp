@@ -1,0 +1,149 @@
+#version 460
+#extension GL_EXT_shader_image_load_formatted : enable
+layout(local_size_x =   5, local_size_y =   5, local_size_z =   5) in;
+layout(binding = 0) uniform sampler3D vecA;
+// layout(binding = 1, r32i) uniform image3D   floatB;
+layout(binding = 1, std430) writeonly buffer floatB {
+    int result;
+};
+
+
+uint getIndexFromMultiIndex(
+    uvec3 dispatch_index, 
+    uvec3 workgroup_index,
+    uint  reduction_index
+);
+
+
+ivec3 getSamplerIndexFromLinearIndex(
+    uint  linear_idx,
+    uvec3 array_bounds
+);
+
+
+ivec3 getSamplerIndexFromMultiIndex(
+    uvec3 grid_bounds,
+    uvec3 dispatch_index, 
+    uvec3 workgroup_index,
+    uint  reduction_index
+);
+
+
+uniform uint  ku_reductionFactor;
+uniform uvec3 ku_gridsize;
+
+
+void main()
+{
+    float sum = 0.0f, tmp = 0.0f;
+    ivec3 idx = ivec3(0);
+    for(uint i = 0; i < ku_reductionFactor; ++i) {
+        idx = getSamplerIndexFromMultiIndex(
+            ku_gridsize,
+            gl_WorkGroupID,
+            gl_LocalInvocationID,
+            i
+        );
+
+        tmp = abs( texelFetch(vecA, idx, 0).x );
+        sum += tmp * tmp;
+    }
+    
+
+    /* 
+        After shader finishes need to take sqrt( getTexImage(...) )
+    */
+    atomicAdd(result, floatBitsToInt(sum));
+    return;
+}
+
+
+
+
+uint getIndexFromMultiIndex(
+    uvec3 dispatch_index, 
+    uvec3 workgroup_index,
+    uint  reduction_index
+) {
+    /* 
+        Given 2 vectors,
+        S [size ] -> (Dx,   Dy,     Dz,   Wx,   Wy,   Wz,   R),
+        I [index] -> (Di_x, Di_y, Di_z, Wi_x, Wi_y, Wi_z, R_i),
+        where,
+        D - Dispatch Size
+        W - local workgroup size
+        R - Reduction factor (work per thread)
+        R_i - Index with bounds [0, R)
+        This function reduces the 7-dimensional index to a single linear
+        memory address
+        Read more here:
+        https://en.wikipedia.org/wiki/Row-_and_column-major_order
+        [NOTE]: Fastest-to-slowest changing index starts from R_i, Wi_z, ... Di_x
+    */
+    const uint dim_coff[7] = uint[7](
+        gl_NumWorkGroups.y * gl_NumWorkGroups.z * 
+            gl_WorkGroupSize.x * gl_WorkGroupSize.y * 
+                gl_WorkGroupSize.z * ku_reductionFactor,
+
+        gl_NumWorkGroups.z * 
+            gl_WorkGroupSize.x * gl_WorkGroupSize.y * 
+                gl_WorkGroupSize.z * ku_reductionFactor,
+
+        gl_WorkGroupSize.x * gl_WorkGroupSize.y * 
+                gl_WorkGroupSize.z * ku_reductionFactor,
+            
+        gl_WorkGroupSize.y * 
+                gl_WorkGroupSize.z * ku_reductionFactor,
+
+        gl_WorkGroupSize.z * ku_reductionFactor,
+
+        ku_reductionFactor,
+
+        1
+    );
+    const uint indices[7] = uint[7](
+        dispatch_index.x,
+        dispatch_index.y,
+        dispatch_index.z,
+        workgroup_index.x,
+        workgroup_index.y,
+        workgroup_index.z,
+        reduction_index
+    );
+    uint linear_memory_index = 0;
+    for(uint i = 0; i < 7; ++i) {
+        linear_memory_index += dim_coff[i] * indices[i];
+    }
+
+
+    return linear_memory_index;
+}
+
+
+ivec3 getSamplerIndexFromLinearIndex(
+    uint  linear_idx,
+    uvec3 array_bounds
+) {
+    return ivec3(
+        int( linear_idx % array_bounds.z ),
+        int( (linear_idx / array_bounds.z) % array_bounds.y ),
+        int( linear_idx / (array_bounds.z * array_bounds.y) )
+    );
+}
+
+
+ivec3 getSamplerIndexFromMultiIndex(
+    uvec3 grid_bounds,
+    uvec3 dispatch_index, 
+    uvec3 workgroup_index,
+    uint  reduction_index
+) {
+    return getSamplerIndexFromLinearIndex(
+        getIndexFromMultiIndex(
+            dispatch_index,
+            workgroup_index,
+            reduction_index
+        ),
+        grid_bounds
+    );
+}

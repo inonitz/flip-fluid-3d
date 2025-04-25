@@ -1,0 +1,64 @@
+#version 460
+#extension GL_EXT_shader_image_load_formatted : enable
+layout(local_size_x =   5, local_size_y =   5, local_size_z =   5) in;
+layout(location = 0) uniform sampler3D celltypes;
+layout(location = 1, r16ui) uniform uimage3D implicitABitfields;
+
+
+#define MATERIAL_TYPE_FLUID_UINT (2)
+#define MATERIAL_TYPE_SOLID_UINT (1)
+#define MATERIAL_TYPE_EMPTY_UINT (0)
+
+
+uint getMatrix_A_Bitfield(ivec3 texCoord);
+
+
+/* 
+    celltypes texture can be further optimized to pack 2-bits per cell-type,
+    which on an rgba32ui type is 16 cell-types per single read op
+    - 16x throughput!
+    Can be thought of as a reduction factor of 16,
+    except that memory written back to celltypes will have to be processed differently.
+*/
+void main()
+{
+    ivec3 texelCoord = ivec3(gl_LocalInvocationID);
+    imageStore(implicitABitfields, texelCoord, uvec4(getMatrix_A_Bitfield(texelCoord), 0, 0, 0));
+    return;
+}
+
+
+uint getMatrix_A_Bitfield(ivec3 texCoord)
+{
+    uint neighbourValues[6] = uint[6](
+        uint( texelFetch(celltypes, texCoord + ivec3(1, 0, 0), 0).x ),
+        uint( texelFetch(celltypes, texCoord - ivec3(1, 0, 0), 0).x ),
+        uint( texelFetch(celltypes, texCoord + ivec3(0, 1, 0), 0).x ),
+        uint( texelFetch(celltypes, texCoord - ivec3(0, 1, 0), 0).x ),
+        uint( texelFetch(celltypes, texCoord + ivec3(0, 0, 1), 0).x ),
+        uint( texelFetch(celltypes, texCoord - ivec3(0, 0, 1), 0).x )
+    );
+
+
+    uint result = 0;
+    uint non_solid_multiplier = 6;
+    for(uint i = 0; i < 6; ++i) {
+        non_solid_multiplier -= uint( neighbourValues[i] == MATERIAL_TYPE_SOLID_UINT );
+        
+        result = result | (uint( neighbourValues[i] == MATERIAL_TYPE_FLUID_UINT ) << i); 
+    }
+    result = result | non_solid_multiplier << 6; 
+
+    /* result is 32 bytes, but packed up-to 9 bytes */
+    /* 
+        bit representation is:
+        0: (i, j, k) + (1, 0, 0) == FLUID_TYPE
+        1: (i, j, k) - (1, 0, 0) == FLUID_TYPE
+        2: (i, j, k) + (0, 1, 0) == FLUID_TYPE
+        3: (i, j, k) - (0, 1, 0) == FLUID_TYPE
+        4: (i, j, k) + (0, 0, 1) == FLUID_TYPE
+        5: (i, j, k) - (0, 0, 1) == FLUID_TYPE
+        6->9: sum[ foreach(index): value += celltype(index) != SOLID_TYPE ]
+    */
+    return result;
+}

@@ -1,0 +1,43 @@
+#version 460
+#extension GL_EXT_shader_image_load_formatted : enable
+layout(local_size_x =   5, local_size_y =   5, local_size_z =   5) in;
+layout(location = 0) uniform sampler3D staggeredu;
+layout(location = 1) uniform sampler3D staggeredv;
+layout(location = 2) uniform sampler3D staggeredw;
+layout(location = 3, r32f) uniform image3D initialBMatrix;
+
+
+float Udiv(in ivec3 texCoord);
+
+
+uniform float ku_neg_pdlsq_dt; /* -1.0f * density * dl * dl / dt */
+uniform float ku_invdl;        /* 1.0f / dl */
+
+
+/* Can be easily optimized with reductionFactor */
+void main()
+{
+    ivec3 texelCoord = ivec3(gl_LocalInvocationID);
+    imageStore(initialBMatrix, texelCoord, vec4( - Udiv(texelCoord) * ku_neg_pdlsq_dt, 0, 0, 0 ));
+    return;
+}
+
+
+float Udiv(in ivec3 texCoord) 
+{
+    float result;
+    float neighbourValues[6] = float[6](
+        texelFetch(staggeredu, texCoord + ivec3(1, 0, 0), 0).x,
+        texelFetch(staggeredu, texCoord - ivec3(0, 0, 0), 0).x,
+        texelFetch(staggeredv, texCoord + ivec3(0, 1, 0), 0).x,
+        texelFetch(staggeredv, texCoord - ivec3(0, 0, 0), 0).x,
+        texelFetch(staggeredw, texCoord + ivec3(0, 0, 1), 0).x,
+        texelFetch(staggeredw, texCoord - ivec3(0, 0, 0), 0).x
+    );
+
+
+    result = (neighbourValues[0] - neighbourValues[1])
+        + (neighbourValues[2] - neighbourValues[3])
+        + (neighbourValues[4] - neighbourValues[5]);
+    return 0.5f * ku_invdl * result;
+}

@@ -418,6 +418,41 @@ template<typename T> struct matrixView {
 };
 
 
+template<typename T> struct Tensor3View {
+    using cref = Tensor3View const&;
+
+
+	T* m_buf;
+	i32 m_rows; 
+	i32 m_columns;
+	i32 m_depth;
+
+
+    Tensor3View<T>() : m_buf(nullptr) {}
+    explicit Tensor3View(T* validAddr, i32 rows, i32 columns, i32 depth) {
+		m_buf 	  = validAddr;
+		m_rows 	  = rows;
+		m_columns = columns;
+		m_depth   = depth;
+		return;
+	}
+	Tensor3View(Tensor3View const& cpy) : 
+		Tensor3View{ cpy.m_buf, cpy.m_rows, cpy.m_columns, cpy.m_depth } {}
+	Tensor3View& operator=(const Tensor3View& cpy) {
+		m_buf 	  = cpy.m_buf;
+		m_rows    = cpy.m_rows;
+		m_columns = cpy.m_columns;
+		m_depth   = cpy.m_depth;
+		return *this;
+	}
+    T&       operator[](i32 idx)       { return m_buf[idx]; }
+    const T& operator[](i32 idx) const { return m_buf[idx]; }
+    T&       operator()(i32 i, i32 j, i32 k)       { return m_buf[k + j * m_depth + i * m_columns * m_depth]; }
+    const T& operator()(i32 i, i32 j, i32 k) const { return m_buf[k + j * m_depth + i * m_columns * m_depth]; }
+    T&       operator()(vec3i const& idx)       { return m_buf[idx.k + idx.j * m_depth + idx.i * m_columns * m_depth]; }
+    const T& operator()(vec3i const& idx) const { return m_buf[idx.k + idx.j * m_depth + idx.i * m_columns * m_depth]; }
+};
+
 
 
 struct UTIL_API mat2f 

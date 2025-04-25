@@ -1,0 +1,77 @@
+Notes:
+	* Testing Will be a nightmare
+	* create a tool to see the 3D Texture in space
+		This will allow you to examine the values (if they make sense)
+		(Ray marching also, maybe raycasting)
+	* Process will be:
+		for every function f to test:
+			* Set Initial data
+			* Observe Changes in Test Case
+			* Do results make sense? 
+				-> Yes
+					Next function
+				-> No
+					Test Everything until error is found
+					Fix error
+					Next function
+			* 
+
+
+
+FLIP Frame
+Advect Particles using grid velocities
+Set initial Cell types
+Transfer particles to staggered grid
+Update cell types
+normalize velocities
+Enforce Boundary Conditions
+
+
+/* 
+	ShaderN is an explicit Compute shader that must be run
+	Ofcourse, one can coalese multiple shaders into one,
+	and save on GPU latency
+*/
+void pressureProject() 
+{
+	Texture r_prev, r_next, p_prev, p_next, x_prev, x_next;
+	Texture tex0, tex1, tex2, tex3, tex4, tex5;
+
+
+	tex0 = -Div(u) * (density * dl*dl)/dt // Shader0
+	r_prev.copy(tex0) // Shader1
+	p_prev.copy(tex0) // Shader2
+	tex5 = createMatrixAStructure(...) // Shader3
+
+
+	r_2norm = 1 // CPU side
+	while(r_2norm < 10-6) // CPU Side while  
+	{
+		tex1 = applyA(tex5, p_prev) // Shader4
+		alpha:
+			tex2 = inner_prod(r_prev, r_prev) // Shader5
+			tex3 = inner_prod(p_prev, tex1)   // Shader6
+
+		update_next_X_next_R:
+			x_next = load(x_prev) + (tex2 / tex3) * load(p_prev); // Shader 7
+			r_next = load(r_prev) + (tex2 / tex3) * load(tex1);   // Shader 7
+
+		beta:
+			tex4 = inner_prod(r_next, r_next) // Shader8
+
+
+		p_next  = load(r_next) + (tex4 / tex2) * load(p_prev) // Shader9
+		r_2norm = getTextureCPUSide(absolute_2norm(r_next))   // Shader9
+		swap(r_prev, r_next)
+		swap(p_prev, p_next)
+		swap(x_prev, x_next)
+	}
+
+
+	return;
+}
+
+
+* The only difference between Conjugate gradient applied to the pressure system,
+and the viscosity-velocity system is the applyA function, and the input vector B
+The REST IS THE SAME ALGORITHM IM IMPLEMENTING NOW!

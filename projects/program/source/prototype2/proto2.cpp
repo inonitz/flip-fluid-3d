@@ -31,8 +31,6 @@ int prototype_splatting_3d_texture2()
     
     awc2setCurrentContext(contextid);
     glctx.initialize();
-
-
     while(alive) 
     {
         awc2newframe();

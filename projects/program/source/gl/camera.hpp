@@ -21,7 +21,7 @@ public:
 
 		const float Near = 0.1f,
 		const float Far  = 100.0f,
-		const float fov  = glm::radians(45.0f)
+		const float fov_degrees = 45.0f
 	) :
 		m_firstPos{0.0f, 0.0f},
 		m_pitch{pitch},
@@ -29,7 +29,7 @@ public:
 		m_vel{vel},
 		m_Near{Near},
 		m_Far{Far},
-		m_fov{fov},
+		m_fov{fov_degrees},
 		m_forward{0.0f},
 		m_up	 {0.0f},
 		m_right  {0.0f},
@@ -38,7 +38,8 @@ public:
 	{
 		updateCameraAxes();
 		m_CameraTransform  = glm::identity<glm::mat4x4>();
-		m_ProjectionMatrix = glm::identity<glm::mat4x4>();
+		m_ProjectionMatrix  = glm::identity<glm::mat4x4>();
+
 
 		auto winsize = awc2getCurrentContextViewport();
 		m_firstPos = glm::vec2{ winsize.x / 2, winsize.y / 2 };
@@ -95,7 +96,7 @@ public:
 		
 		auto winsize	   = awc2getCurrentContextViewport();
 		f32 aspectRatio    = __scast(f32, winsize.x) / winsize.y;
-		m_ProjectionMatrix = glm::perspective(m_fov, aspectRatio, m_Near, m_Far);
+		m_ProjectionMatrix = glm::perspective(glm::radians(m_fov), aspectRatio, m_Near, m_Far);
 		return;
 	}
 
@@ -110,7 +111,7 @@ public:
 		m_Near = near;
 		m_Far  = far;
 		m_fov  = fov;
-		m_ProjectionMatrix = glm::perspective(m_fov, aspectRatio, m_Near, m_Far);
+		m_ProjectionMatrix = glm::perspective(glm::radians(m_fov), aspectRatio, m_Near, m_Far);
 		return;
 	}
 

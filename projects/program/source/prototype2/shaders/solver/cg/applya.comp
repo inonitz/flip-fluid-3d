@@ -1,0 +1,47 @@
+#version 460
+#extension GL_EXT_shader_image_load_formatted : enable
+layout(local_size_x =   5, local_size_y =   5, local_size_z =   5) in;
+layout(location = 0) uniform isampler3D implicitA;
+layout(location = 1) uniform sampler3D vecIn;
+layout(location = 2, r32f) uniform image3D vecOut;
+
+
+float unpack_matrix_a_calculate_laplacian(ivec3 texCoord);
+
+
+/* 
+    Can be easily optimized with reductionFactor
+*/
+void main()
+{
+    ivec3 texelCoord = ivec3(gl_LocalInvocationID);
+    imageStore(vecOut, texelCoord, vec4(unpack_matrix_a_calculate_laplacian(texelCoord), 0, 0, 0));
+    return;
+}
+
+
+float unpack_matrix_a_calculate_laplacian(ivec3 texCoord)
+{
+    uint  a_factors_ijk = 0;
+    float factor = 0.0f, sum = 0.0f, valueIJK;
+    float neighbourValues[6] = float[6](
+        texelFetch(vecIn, texCoord + ivec3(1, 0, 0), 0).x,
+        texelFetch(vecIn, texCoord - ivec3(1, 0, 0), 0).x,
+        texelFetch(vecIn, texCoord + ivec3(0, 1, 0), 0).x,
+        texelFetch(vecIn, texCoord - ivec3(0, 1, 0), 0).x,
+        texelFetch(vecIn, texCoord + ivec3(0, 0, 1), 0).x,
+        texelFetch(vecIn, texCoord - ivec3(0, 0, 1), 0).x
+    );
+    valueIJK      = texelFetch(vecIn, texCoord, 0).x;
+    a_factors_ijk = texelFetch(implicitA, texCoord, 0).x;
+
+
+    for(uint i = 0; i < 6; ++i) {
+        factor = - float( (a_factors_ijk >> i) & 0x01 );
+        sum += neighbourValues[i] * factor;
+    }
+    sum += valueIJK * float( (a_factors_ijk >> 6) & 0x07 );
+
+
+    return sum;
+}
