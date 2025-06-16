@@ -31,6 +31,7 @@ void main()
     vec4 pos = texelFetch(positionTex, texelPos, 0);
     vec4 col = texelFetch(colourTex,   texelPos, 0);
 
+
     gl_Position = projection * view * model * vec4(pos.xyz, 1);
     fragColor   = col;
     return;

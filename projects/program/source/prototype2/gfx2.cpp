@@ -64,18 +64,21 @@ static std::vector<f32> celltype_resetbuf;
 void GraphicsContext::initialize()
 {
     gl::glEnable(gl::GL_DEPTH_TEST);
+    gl::glPolygonMode(gl::GL_FRONT_AND_BACK, gl::GL_LINE);
     gl::glEnable(gl::GL_BLEND);
-    gl::glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    gl::glPointSize(10);
+    gl::glBlendFunc(gl::GL_SRC_ALPHA, gl::GL_ONE_MINUS_SRC_ALPHA);
+    gl::glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    // gl::glPointSize(10);
 
     m_solver.create();
     initShaders();
     initBuffers();
     
+    m_cameraSpeed = 25.0f;
     m_camera = new CameraFPS(
         glm::vec3{ -5.0f, 1.0f, 2.5f },
         glm::vec3(0, 1.0f, 0),
-        0, 0, 2.5f, 0.1f, 100.0f,
+        0, 0, m_cameraSpeed, 0.1f, 10000.0f,
         45.0f
     );
     return;
@@ -88,6 +91,7 @@ void GraphicsContext::destroy()
     destroyBuffers();
     destroyShaders();
     m_solver.destroy();
+    marker::marker_flag_close_logfile_handle();
     return;
 }
 
@@ -105,11 +109,15 @@ void GraphicsContext::update()
 
 void GraphicsContext::initShaders()
 {
-    const std::array<ShaderData, 4> graphicsFiles = {{
-        { "projects/program/source/prototype2/shaders/position_only.vert", __scast(u32, gl::GL_VERTEX_SHADER  ) },
-        { "projects/program/source/prototype2/shaders/position_only.frag", __scast(u32, gl::GL_FRAGMENT_SHADER) },
-        { "projects/program/source/prototype2/shaders/shader.vert",        __scast(u32, gl::GL_VERTEX_SHADER  ) },
-        { "projects/program/source/prototype2/shaders/shader.frag",        __scast(u32, gl::GL_FRAGMENT_SHADER) }
+    const std::array<ShaderData, 8> graphicsFiles = {{
+        { "projects/program/source/prototype2/shaders/draw/position_only.vert",   __scast(u32, gl::GL_VERTEX_SHADER  ) },
+        { "projects/program/source/prototype2/shaders/draw/position_only.frag",   __scast(u32, gl::GL_FRAGMENT_SHADER) },
+        { "projects/program/source/prototype2/shaders/draw/particle_only.vert",   __scast(u32, gl::GL_VERTEX_SHADER  ) },
+        { "projects/program/source/prototype2/shaders/draw/particle_only.frag",   __scast(u32, gl::GL_FRAGMENT_SHADER) },
+        { "projects/program/source/prototype2/shaders/draw/particle_cube.vert",   __scast(u32, gl::GL_VERTEX_SHADER  ) },
+        { "projects/program/source/prototype2/shaders/draw/particle_cube.frag",   __scast(u32, gl::GL_FRAGMENT_SHADER) },
+        { "projects/program/source/prototype2/shaders/draw/sphere_particle.vert", __scast(u32, gl::GL_VERTEX_SHADER  ) },
+        { "projects/program/source/prototype2/shaders/draw/sphere_particle.frag", __scast(u32, gl::GL_FRAGMENT_SHADER) }
     }};
 
 
@@ -166,6 +174,7 @@ void GraphicsContext::destroyBuffers()
 
 void GraphicsContext::renderimgui()
 {
+    bool testany = false;
     auto fluid_solver_time_measurements = m_solver.getTimers();
     auto f_timers = fluid_solver_time_measurements;
     static const char* imgui_diagnostics_text = "\
@@ -178,6 +187,7 @@ CPU - computepass() \n\
 - %-6.4f [normalize]\n\
 - %-6.4f [boundaries]\n\
 - %-6.4f [pressureSolve]\n\
+- %-6.4f [gridToParticles]\n\
 GPU - computepass() \n\
 - %-6.4f [total]\n\
 - %-6.4f [advect]\n\
@@ -186,6 +196,7 @@ GPU - computepass() \n\
 - %-6.4f [normalize]\n\
 - %-6.4f [boundaries]\n\
 - %-6.4f [pressureSolve]\n\
+- %-6.4f [gridToParticles]\n\
 ";
 
 
@@ -196,10 +207,14 @@ GPU - computepass() \n\
     ImGui::SeparatorText("Camera");
     ImGui::Text("Position  %s\n", glm::to_string(m_camera->getPosition()).c_str());
     ImGui::Text("Direction %s\n", glm::to_string(m_camera->getDirection()).c_str());
+    testany = testany || ImGui::DragFloat("Camera speed", &m_cameraSpeed, 0.1f, 0.0f, 25.0f);
+    if(testany) {
+        m_camera->updateCameraSpeed(m_cameraSpeed);
+        testany = false;
+    }
 
 
     ImGui::SeparatorText("Projection Matrix");
-    bool testany = false;
     testany = testany || ImGui::DragFloat("Field Of View", &m_projectionParams[0], 0.1f, 0.0f, 90.0f );
     testany = testany || ImGui::DragFloat("Near Plane",    &m_projectionParams[1], 0.1f, 0.0f, 10.0f );
     testany = testany || ImGui::DragFloat("Far  Plane",    &m_projectionParams[2], 0.1f, 0.0f, 100.0f);
@@ -233,13 +248,15 @@ GPU - computepass() \n\
         f_timers.mr_normalizeTimeCPU.previousFrame() * 1e-6,
         f_timers.mr_boundariesTimeCPU.previousFrame() * 1e-6,
         f_timers.mr_pressureSolveTimeCPU.previousFrame() * 1e-6,
+        f_timers.mr_gridToParticleTimeCPU.previousFrame() * 1e-6,
         f_timers.getGPUTime_ns() * 1e-6, 
         f_timers.mr_advectTimeGPU.previousFrame() * 1e-6,
         f_timers.mr_resetCellTypesTimeGPU.previousFrame() * 1e-6,
         f_timers.mr_particleToGridTimeGPU.previousFrame() * 1e-6,
         f_timers.mr_normalizeTimeGPU.previousFrame() * 1e-6,
         f_timers.mr_boundariesTimeGPU.previousFrame() * 1e-6,
-        f_timers.mr_pressureSolveTimeGPU.previousFrame() * 1e-6
+        f_timers.mr_pressureSolveTimeGPU.previousFrame() * 1e-6,
+        f_timers.mr_gridToParticleTimeGPU.previousFrame() * 1e-6
     );
 
 
@@ -250,20 +267,39 @@ GPU - computepass() \n\
 void GraphicsContext::render()
 {
     glm::mat4x4 model = glm::identity<glm::mat4x4>();
+    auto solver_gridsize      = m_solver.getGridSize();
+    auto solver_particleCount = m_solver.getParticleCount();
+    u32 total_instances = solver_gridsize.x * solver_gridsize.y * solver_gridsize.z;
+    u32 total_particles = m_solver.getParticleTotal();
+
+    // gl::glBindVertexArray(mr_emptyVao);
+    // m_solver.getPositionTexture().bindUnit(0);
+    // m_solver.getColourTexture().bindUnit(1);
+    // model = glm::translate(glm::identity<glm::mat4x4>(), -m_particleTranslate);
+    // mr_drawParticles.bind();
+    // mr_drawParticles.uniform1i("positionTex", 0);
+    // mr_drawParticles.uniform1i("colourTex",   1);
+    // mr_drawParticles.uniformMatrix4fv("projection", glm::value_ptr(m_camera->getProjection()) );
+    // mr_drawParticles.uniformMatrix4fv("view",       glm::value_ptr(m_camera->getView())       );
+    // mr_drawParticles.uniformMatrix4fv("model",      glm::value_ptr(model));
+    // gl::glDrawArraysInstanced(gl::GL_POINTS, 0, 1, m_solver.getParticleTotal());
 
 
-    gl::glBindVertexArray(mr_emptyVao);
-    m_solver.getPositionTexture().bindUnit(0);
-    m_solver.getColourTexture().bindUnit(1);
-    model = glm::translate(glm::identity<glm::mat4x4>(), -m_particleTranslate);
-    mr_drawParticles.bind();
-    mr_drawParticles.uniform1i("positionTex", 0);
-    mr_drawParticles.uniform1i("colourTex",   1);
-    mr_drawParticles.uniformMatrix4fv("projection", glm::value_ptr(m_camera->getProjection()) );
-    mr_drawParticles.uniformMatrix4fv("view",       glm::value_ptr(m_camera->getView())       );
-    mr_drawParticles.uniformMatrix4fv("model",      glm::value_ptr(model));
-    gl::glDrawArraysInstanced(gl::GL_POINTS, 0, 1, m_solver.getParticleTotal());
-    
+    // gl::glBindVertexArray(mr_cubeVao);
+    // m_solver.getDebugGridTexture().bindUnit(0);
+    // m_solver.getColourTexture().bindUnit(1);
+    // m_solver.getCellTypeTexture().bindUnit(2);
+    // model = glm::translate(glm::identity<glm::mat4x4>(), -m_particleTranslate);
+    // mr_drawPrimitives.bind();
+    // mr_drawPrimitives.uniform1i("positionTex", 0);
+    // mr_drawPrimitives.uniform1i("colourTex",   1);
+    // mr_drawPrimitives.uniform1i("cellTypeTex", 2);
+    // mr_drawPrimitives.uniform3uiv("ku_gridSize", solver_gridsize.begin() );
+    // mr_drawPrimitives.uniformMatrix4fv("projection", glm::value_ptr(m_camera->getProjection()) );
+    // mr_drawPrimitives.uniformMatrix4fv("view",       glm::value_ptr(m_camera->getView())       );
+    // mr_drawPrimitives.uniformMatrix4fv("model",      glm::value_ptr(model));
+    // gl::glDrawArraysInstanced(gl::GL_TRIANGLE_STRIP, 0, 36, total_instances);
+
 
     gl::glBindVertexArray(mr_cubeVao);
     model = glm::translate(glm::identity<glm::mat4x4>(), -m_cubeTranslate);
@@ -281,6 +317,20 @@ void GraphicsContext::render()
     mr_drawVerticesOnly.uniformMatrix4fv("view",       glm::value_ptr(m_camera->getView())       );
     mr_drawVerticesOnly.uniformMatrix4fv("model",      glm::value_ptr(model));
     gl::glDrawArrays(gl::GL_TRIANGLES, 0, verts_sphere.size());
+
+
+    gl::glBindVertexArray(mr_sphereVao);
+    model = glm::translate(glm::identity<glm::mat4x4>(), -m_sphereTranslate);
+    model = model * glm::scale(glm::identity<glm::mat4x4>(), glm::vec3(0.5f));
+    mr_drawSphereParticles.bind();
+    m_solver.getPositionTexture().bindUnit(0);
+    mr_drawSphereParticles.uniform1i("positionTex", 0);
+    mr_drawSphereParticles.uniform3uiv("ku_particleCount", solver_particleCount.begin());
+    mr_drawSphereParticles.uniformMatrix4fv("projection", glm::value_ptr(m_camera->getProjection()) );
+    mr_drawSphereParticles.uniformMatrix4fv("view",       glm::value_ptr(m_camera->getView())       );
+    mr_drawSphereParticles.uniformMatrix4fv("model",      glm::value_ptr(model));
+    gl::glDrawArraysInstanced(gl::GL_TRIANGLES, 0, verts_sphere.size(), total_particles);
+
     return;
 }
 

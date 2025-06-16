@@ -23,7 +23,7 @@ void PressureSolver::init(
 }
 
 
-void PressureSolver::solve(
+u32 PressureSolver::solve(
     u32 staggeredu_texid,
     u32 staggeredv_texid,
     u32 staggeredw_texid,
@@ -72,7 +72,9 @@ void PressureSolver::solve(
         std::swap(mr_pprev, mr_pnext);
         std::swap(mr_xprev, mr_xnext);
     }
-    return;
+
+
+    return m_registers[mr_xprev].id();
 }
 
 

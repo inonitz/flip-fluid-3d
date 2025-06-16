@@ -21,9 +21,10 @@ vec3 trilerpStaggeredVelocities(vec3 position);
 void main()
 {
     ivec3 texelCoord = ivec3(gl_GlobalInvocationID);
-    vec3  result = imageLoad(prevposition, texelCoord).xyz;
+    vec3  result     = imageLoad(prevposition, texelCoord).xyz;
     
     result += ku_dt * trilerpStaggeredVelocities(result.xyz);
+    /* need to clamp position to bounds + leftmost_pos */
     
     imageStore(nextposition, texelCoord, vec4(result, 0));
     return;

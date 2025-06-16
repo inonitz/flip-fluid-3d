@@ -17,14 +17,29 @@ Notes:
 			* 
 
 
+for frame f:
+	advect_positions_with_grid
+	clear_labels
+	clear_velocities_grid
+	particlesToGrid
+	particle_normalize
+	boundaryConditions
+	apply_gravity
+	projectPressure
+	update_velocities_subtract_pressure_gradient
+	update_particle_velocities_with_grid_to_particle
+	++f
 
-FLIP Frame
-Advect Particles using grid velocities
-Set initial Cell types
-Transfer particles to staggered grid
-Update cell types
-normalize velocities
-Enforce Boundary Conditions
+* Test Every function in the solver individually
+    -> Use Grid drawing with alpha blending on empty elements
+        to see results of each function visually
+
+* Current function being tested 
+    - ParticleToGrid
+
+
+
+
 
 
 /* 
@@ -32,7 +47,7 @@ Enforce Boundary Conditions
 	Ofcourse, one can coalese multiple shaders into one,
 	and save on GPU latency
 */
-void pressureProject() 
+void conjugateGradient() 
 {
 	Texture r_prev, r_next, p_prev, p_next, x_prev, x_next;
 	Texture tex0, tex1, tex2, tex3, tex4, tex5;

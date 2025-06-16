@@ -99,7 +99,7 @@ namespace marker
 {
     void marker_flag_close_logfile_handle() {
         std::fclose(detail::marker::__output_buf);
-        mtx_destroy(&__write_lock);
+        mtx_destroy(&detail::marker::__write_lock);
         return;
     }
 }

@@ -43,7 +43,7 @@ void TextureDescriptorArray::TextureAuxillary::initialize(
     gl::glTextureParameteri(texid, gl::GL_TEXTURE_WRAP_R, gl::GL_CLAMP_TO_EDGE);
     gl::glTextureParameteri(texid, gl::GL_TEXTURE_MIN_FILTER, gl::GL_NEAREST);
     gl::glTextureParameteri(texid, gl::GL_TEXTURE_MAG_FILTER, gl::GL_NEAREST);
-    markfmt("Texture %u (%x, %x, %x) %s", texid, 
+    markfmt("Texture %u ( 0x%x, 0x%x, 0x%x ) %s", texid, 
         fmt.m_imageFormat,
         fmt.m_format,
         fmt.m_type,

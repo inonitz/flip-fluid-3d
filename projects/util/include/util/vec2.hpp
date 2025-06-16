@@ -243,6 +243,22 @@ DEFINE_VECTOR_STRUCTURE( \
 		w = d;
 		return; 
 	}
+	explicit vec4f(i32 a, i32 b, i32 c, i32 d) 
+	{ 
+		x = __scast(f32, a); 
+		y = __scast(f32, b); 
+		z = __scast(f32, c); 
+		w = __scast(f32, d);
+		return; 
+	}
+	explicit vec4f(u32 a, u32 b, u32 c, u32 d) 
+	{ 
+		x = __scast(f32, a); 
+		y = __scast(f32, b); 
+		z = __scast(f32, c); 
+		w = __scast(f32, d);
+		return; 
+	}
 	vec4f(__m128 mm) : xmm(mm) {}
 )
 DEFINE_VECTOR_STRUCTURE( \

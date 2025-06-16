@@ -116,6 +116,12 @@ public:
 	}
 
 
+	__force_inline void updateCameraSpeed(f32 cameraSpeed) {
+		m_vel = cameraSpeed;
+		return;
+	}
+
+
 	__force_inline glm::mat4x4 const& getView() 	  const { return m_CameraTransform;  }
 	__force_inline glm::mat4x4 const& getProjection() const { return m_ProjectionMatrix; }
 	__force_inline glm::vec3   const& getPosition()   const { return m_position; }

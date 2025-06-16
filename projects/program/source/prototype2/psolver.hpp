@@ -24,7 +24,7 @@ public:
     }
 
 
-    void solve(
+    u32 solve(
         u32 staggeredu_texid,
         u32 staggeredv_texid,
         u32 staggeredw_texid,

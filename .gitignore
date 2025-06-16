@@ -21,3 +21,4 @@ Makefile
 
 # misc
 imgui.ini
+__debug_output.txt

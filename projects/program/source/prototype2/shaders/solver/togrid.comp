@@ -2,13 +2,14 @@
 #extension GL_EXT_shader_image_load_formatted : enable
 layout(local_size_x =   5, local_size_y =   5, local_size_z =   5) in;
 layout(binding = 0) uniform sampler3D positions;
-layout(binding = 1) writeonly uniform image3D nextcelltypes;
-layout(binding = 2) readonly  uniform image3D prevstaggeredu; /* .x = vel.u, .y = interpolation weight */
-layout(binding = 3) readonly  uniform image3D prevstaggeredv; /* .x = vel.v, .y = interpolation weight */
-layout(binding = 4) readonly  uniform image3D prevstaggeredw; /* .x = vel.w, .y = interpolation weight */
-layout(binding = 5) writeonly uniform image3D nextstaggeredu; /* .x = vel.u, .y = interpolation weight */
-layout(binding = 6) writeonly uniform image3D nextstaggeredv; /* .x = vel.v, .y = interpolation weight */
-layout(binding = 7) writeonly uniform image3D nextstaggeredw; /* .x = vel.w, .y = interpolation weight */
+layout(binding = 1) uniform sampler3D velocities;
+layout(binding = 2) writeonly uniform image3D nextcelltypes;
+layout(binding = 3) readonly  uniform image3D prevstaggeredu; /* .x = vel.u, .y = interpolation weight */
+layout(binding = 4) readonly  uniform image3D prevstaggeredv; /* .x = vel.v, .y = interpolation weight */
+layout(binding = 5) readonly  uniform image3D prevstaggeredw; /* .x = vel.w, .y = interpolation weight */
+layout(binding = 6) writeonly uniform image3D nextstaggeredu; /* .x = vel.u, .y = interpolation weight */
+layout(binding = 7) writeonly uniform image3D nextstaggeredv; /* .x = vel.v, .y = interpolation weight */
+layout(binding = 8) writeonly uniform image3D nextstaggeredw; /* .x = vel.w, .y = interpolation weight */
 
 
 uniform vec3  u_bottomLeftmostPosition;
@@ -50,25 +51,26 @@ void main()
 {
     ivec3 workID     = ivec3(gl_GlobalInvocationID);
     vec3  positionID = texelFetch(positions, workID, 0).xyz;
+    vec3  velocity   = texelFetch(velocities, workID, 0).xyz;
     splatWeightedVelcities(
         prevstaggeredu, 
         nextstaggeredu,
         positionID,
-        imageLoad(prevstaggeredu, workID).x,
+        velocity.x,
         vec3(0.0f, 0.5f, 0.5f)
     );
     splatWeightedVelcities(
         prevstaggeredv, 
         nextstaggeredv,
         positionID, 
-        imageLoad(prevstaggeredv, workID).x,
+        velocity.y,
         vec3(0.5f, 0.0f, 0.5f)
     );
     splatWeightedVelcities(
         prevstaggeredw, 
         nextstaggeredw,
         positionID, 
-        imageLoad(prevstaggeredw, workID).x,
+        velocity.z,
         vec3(0.5f, 0.5f, 0.0f)
     );
     imageStore(nextcelltypes, ivec3(floor(positionID)), vec4(MATERIAL_TYPE_FLUID));
@@ -95,9 +97,9 @@ ivec3 getIndices(vec3 position)
 void splatWeightedVelcities(
     in readonly  image3D oldval,
     in writeonly image3D dest,
-    in vec3    position, 
-    in float   vel,
-    in vec3    shiftOffset
+    in vec3  position, 
+    in float vel,
+    in vec3  shiftOffset
 ) {
     vec3  shifted, w, omw;
     ivec3 shiftedi;
